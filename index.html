@@ -353,6 +353,8 @@
   </div>
 
   <script>
+    // Set API base for local development
+    const API_BASE = 'http://localhost:5051';
     const form = document.getElementById('uploadForm');
     const senderEmailInput = document.getElementById('senderEmail');
     const fileInput = document.getElementById('file');
@@ -561,7 +563,7 @@
 
       showAuthMessage('Working...');
       try {
-        const resp = await fetch(url, {
+        const resp = await fetch(`${API_BASE}${url}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -622,7 +624,7 @@
         const headers = {};
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-        const resp = await fetch('/api/verify', { method: 'POST', body: formData, headers });
+        const resp = await fetch(`${API_BASE}/api/verify`, { method: 'POST', body: formData, headers });
         const text = await resp.text();
         let data = null;
         try {
