@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Offer Letter Verifier v3.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.12);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #7dd3fc;
+      --accent-strong: #22d3ee;
+      --success: #22c55e;
+      --danger: #f87171;
+      --warning: #fbbf24;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, rgba(34,211,238,0.12), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(125,211,252,0.16), transparent 32%),
+                  var(--bg);
+      padding: 32px;
+      line-height: 1.5;
+    }
+
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hero {
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hero h1 { margin: 0 0 4px; font-size: 1.6rem; letter-spacing: -0.02em; }
+    .hero p { margin: 0; color: var(--muted); }
+
+    .auth-card {
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .auth-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .ghost { background: transparent; color: var(--text); border: 1px dashed var(--border); box-shadow: none; }
+    .inline-status { color: var(--muted); font-size: 0.9rem; }
+
+    form {
+      display: grid;
+      grid-template-columns: 1.6fr 1.1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    @media (max-width: 860px) {
+      form { grid-template-columns: 1fr; }
+    }
+
+    input, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.98rem;
+    }
+
+    input::file-selector-button {
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-right: 12px;
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button {
+      border: 1px solid rgba(34,211,238,0.5);
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #0f172a;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 8px 24px rgba(34,211,238,0.25);
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .status { font-size: 0.96rem; color: var(--muted); padding: 0 2px; }
+
+    .dashboard {
+      display: none;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      padding: 18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+
+    .section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.74rem; color: var(--muted); margin: 0 0 4px; }
+    .doc-title { margin: 0; font-size: 1.3rem; letter-spacing: -0.01em; }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      color: #0f172a;
+      background: var(--muted);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .pill.low { background: linear-gradient(135deg, #bbf7d0, #4ade80); }
+    .pill.medium { background: linear-gradient(135deg, #fde68a, #fbbf24); }
+    .pill.high { background: linear-gradient(135deg, #fecdd3, #f87171); }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .grid.metrics { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+    .card {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .metric-label { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+    .metric-value { margin: 0; font-size: 1.5rem; font-weight: 700; }
+    .muted { color: var(--muted); }
+
+    .flag-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+    .flag { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.94rem; }
+    .flag.green { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.12); color: #bbf7d0; }
+    .flag.red { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.14); color: #fecdd3; }
+
+    .list-grid { 
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0;
+      margin: 10px 0 0;
+      list-style: none;
+    }
+    .list-grid li {
+      display: flex;
+      flex-direction: row;
+      align-items: baseline;
+      gap: 8px;
+      color: var(--text);
+      border-bottom: 1px dashed rgba(255,255,255,0.08);
+      padding: 6px 0;
+    }
+    .label { 
+      color: var(--muted);
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      width: 90px;
+    }
+    .value { 
+      color: var(--text);
+      font-size: 0.9rem;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    details {
+      margin-top: 14px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    details summary { cursor: pointer; font-weight: 700; }
+    pre {
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #e2e8f0;
+      max-height: 60vh;
+      overflow: auto;
+      font-family: "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 860px) {
+      body { padding: 22px; }
+      .hero { flex-direction: column; align-items: flex-start; }
+      .pill { width: 100%; min-width: 0; text-align: left; }
+      form { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .doc-title { font-size: 1.1rem; }
+      .metric-value { font-size: 1.25rem; }
+      .grid.cols-3 { grid-template-columns: 1fr; }
+      .grid.cols-2 { grid-template-columns: 1fr; }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      .list-grid li { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Offer authenticity</p>
+        <h1>Offer Letter Verifier</h1>
+        <p>Verify a sender email and document in one shot. Accepted: pdf, png, jpg, jpeg, bmp, tiff, webp (max 20 MB).</p>
+      </div>
+      <div class="pill" id="heroBadge">Ready</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-header">
+        <div>
+          <p class="eyebrow">Authentication</p>
+          <div id="authState" class="metric-label">Signed out</div>
+        </div>
+        <div class="inline-status" id="authMessage"></div>
+      </div>
+      <div class="auth-grid">
+        <input id="authEmail" type="email" placeholder="Email" aria-label="Auth email" />
+        <input id="authPassword" type="password" placeholder="Password (min 8 chars)" aria-label="Auth password" />
+        <button id="loginBtn" type="button">Login</button>
+        <button id="registerBtn" type="button">Register</button>
+        <button id="logoutBtn" type="button" class="ghost">Logout</button>
+      </div>
+    </div>
+
+    <form id="uploadForm">
+      <input id="senderEmail" name="sender_email" type="email" placeholder="Sender email" required aria-label="Sender email" />
+      <input id="file" name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/bmp,image/tiff,image/webp" required aria-label="Offer letter file" />
+      <button id="submitBtn" type="submit">Verify</button>
+    </form>
+    <div id="status" class="status"></div>
+
+    <div class="dashboard" id="dashboard">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Verification summary</p>
+          <h2 class="doc-title" id="docTitle">Document</h2>
+        </div>
+        <div class="pill" id="verdictBadge">Waiting</div>
+      </div>
+
+      <div class="grid metrics">
+        <div class="card">
+          <p class="metric-label">Final verdict</p>
+          <p class="metric-value" id="finalVerdict">-</p>
+          <p class="muted" id="riskLevel">Risk: -</p>
+        </div>
+        <div class="card">
+          <p class="metric-label">Overall confidence</p>
+          <p class="metric-value" id="confidence">-</p>
+          <p class="muted" id="timestamp">-</p>
+        </div>
+        <div class="card">
+          <p class="metric-label">Sender email</p>
+          <p class="metric-value" id="senderVerdict">-</p>
+          <p class="muted" id="senderEmailDisplay">-</p>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <p class="metric-label">Green flags</p>
+          <ul class="flag-list" id="greenFlags"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Red flags</p>
+          <ul class="flag-list" id="redFlags"></ul>
+        </div>
+      </div>
+
+      <div class="grid cols-3">
+        <div class="card">
+          <p class="metric-label">Company</p>
+          <ul class="list-grid" id="companyDetails"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Candidate</p>
+          <ul class="list-grid" id="candidateDetails"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Job</p>
+          <ul class="list-grid" id="jobDetails"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Compensation</p>
+          <ul class="list-grid" id="compDetails"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Document</p>
+          <ul class="list-grid" id="docDetails"></ul>
+        </div>
+        <div class="card">
+          <p class="metric-label">Terms</p>
+          <ul class="list-grid" id="termsDetails"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const senderEmailInput = document.getElementById('senderEmail');
+    const fileInput = document.getElementById('file');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusEl = document.getElementById('status');
+    const dashboard = document.getElementById('dashboard');
+    const heroBadge = document.getElementById('heroBadge');
+
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const authState = document.getElementById('authState');
+    const authMessage = document.getElementById('authMessage');
+
+    const TOKEN_KEY = 'offer_verifier_token';
+    const USER_KEY = 'offer_verifier_user';
+    let authToken = localStorage.getItem(TOKEN_KEY) || '';
+    let authUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+
+    const docTitle = document.getElementById('docTitle');
+    const verdictBadge = document.getElementById('verdictBadge');
+    const finalVerdict = document.getElementById('finalVerdict');
+    const riskLevel = document.getElementById('riskLevel');
+    const confidence = document.getElementById('confidence');
+    const timestamp = document.getElementById('timestamp');
+    const senderVerdict = document.getElementById('senderVerdict');
+    const senderEmailDisplay = document.getElementById('senderEmailDisplay');
+    const greenFlags = document.getElementById('greenFlags');
+    const redFlags = document.getElementById('redFlags');
+    const companyDetails = document.getElementById('companyDetails');
+    const candidateDetails = document.getElementById('candidateDetails');
+    const jobDetails = document.getElementById('jobDetails');
+    const compDetails = document.getElementById('compDetails');
+    const docDetails = document.getElementById('docDetails');
+    const termsDetails = document.getElementById('termsDetails');
+
+    const setBadge = (el, status) => {
+      const value = (status || '').toLowerCase();
+      el.classList.remove('low', 'medium', 'high');
+      if (value.includes('verified')) el.classList.add('low');
+      else if (value.includes('partial') || value.includes('medium')) el.classList.add('medium');
+      else el.classList.add('high');
+      el.textContent = status || 'Waiting';
+    };
+
+    const renderFlags = (list, flags, kind) => {
+      list.innerHTML = '';
+      if (!flags || !flags.length) {
+        const li = document.createElement('li');
+        li.className = `flag ${kind}`;
+        li.textContent = 'None';
+        list.appendChild(li);
+        return;
+      }
+      flags.forEach(text => {
+        const li = document.createElement('li');
+        li.className = `flag ${kind}`;
+        li.textContent = text;
+        list.appendChild(li);
+      });
+    };
+
+    const renderDetailList = (el, entries) => {
+      el.innerHTML = '';
+      entries.forEach(([label, value]) => {
+        const li = document.createElement('li');
+        const left = document.createElement('span');
+        left.className = 'label';
+        left.textContent = label;
+        const right = document.createElement('span');
+        right.className = 'value';
+        right.textContent = value || '-';
+        li.append(left, right);
+        el.appendChild(li);
+      });
+    };
+
+    const populateDashboard = (data) => {
+      const summary = data?.verification_summary || {};
+      const company = data?.company_details || {};
+      const candidate = data?.candidate_details || {};
+      const job = data?.job_details || {};
+      const comp = data?.compensation_details || {};
+      const doc = data?.document_details || {};
+      const terms = data?.terms_and_conditions || {};
+      const sender = data?.sender_email_verification || {};
+
+      docTitle.textContent = data?.document_name || 'Document';
+      
+      setBadge(verdictBadge, summary.final_verdict || 'UNVERIFIED');
+      setBadge(heroBadge, summary.final_verdict || 'Waiting');
+      finalVerdict.textContent = summary.final_verdict || '-';
+      riskLevel.textContent = `Risk: ${summary.risk_level || '-'}`;
+      confidence.textContent = summary.overall_confidence != null ? `${summary.overall_confidence}` : '-';
+      timestamp.textContent = data?.timestamp ? new Date(data.timestamp).toLocaleString() : '-';
+
+      const senderStatus = sender.verdict || 'Unknown';
+      senderVerdict.textContent = senderStatus;
+      senderEmailDisplay.textContent = data?.sender_email_verification?.email || senderEmailInput.value || '-';
+      if (senderStatus.toLowerCase().includes('legit')) senderVerdict.style.color = '#bbf7d0';
+      else senderVerdict.style.color = '#fca5a5';
+
+      renderFlags(greenFlags, summary.all_green_flags, 'green');
+      renderFlags(redFlags, summary.all_red_flags, 'red');
+
+      renderDetailList(companyDetails, [
+        ['Name', company.name],
+        ['Brand', company.brand_name],
+        ['Website', company.website],
+        ['Email domain', company.email_domain],
+        ['Phone', company.phone],
+        ['Address', company.address],
+        ['Registration', company.registration_number],
+        ['GST', company.gst_number],
+      ]);
+
+      renderDetailList(candidateDetails, [
+        ['Name', candidate.name],
+        ['Email', candidate.email],
+        ['Phone', candidate.phone],
+        ['Address', candidate.address],
+      ]);
+
+      renderDetailList(jobDetails, [
+        ['Role', job.role],
+        ['Department', job.department],
+        ['Employment type', job.employment_type],
+        ['Start date', job.start_date],
+        ['Probation', job.probation_period],
+        ['Working location', job.working_location],
+        ['Work mode', job.work_mode],
+      ]);
+
+      renderDetailList(compDetails, [
+        ['Salary', comp.salary],
+        ['Breakdown', typeof comp.salary_breakdown === 'string' ? comp.salary_breakdown : JSON.stringify(comp.salary_breakdown || '')],
+        ['Benefits', Array.isArray(comp.benefits) ? comp.benefits.join(', ') : comp.benefits],
+      ]);
+
+      renderDetailList(docDetails, [
+        ['Issue date', doc.issue_date],
+        ['Valid until', doc.offer_valid_until],
+        ['HR name', doc.hr_name],
+        ['HR email', doc.hr_email],
+        ['HR phone', doc.hr_phone],
+        ['Signatory', doc.signatory_name || doc.signature_name],
+        ['Designation', doc.signatory_designation],
+      ]);
+
+      renderDetailList(termsDetails, [
+        ['Bond terms', terms.bond_terms],
+        ['Notice period', terms.notice_period],
+        ['Policies', Array.isArray(terms.policies) ? terms.policies.join(', ') : terms.policies],
+        ['Confidentiality', terms.confidentiality_clause],
+        ['Non-compete', terms.non_compete_clause],
+      ]);
+
+      // Data is stored in Firestore - no need to display raw JSON
+      dashboard.style.display = 'block';
+    };
+
+    const setAuthUI = () => {
+      if (authToken && authUser?.email) {
+        authState.textContent = `Signed in as ${authUser.email}`;
+        logoutBtn.disabled = false;
+        loginBtn.disabled = true;
+        registerBtn.disabled = true;
+      } else {
+        authState.textContent = 'Signed out';
+        logoutBtn.disabled = true;
+        loginBtn.disabled = false;
+        registerBtn.disabled = false;
+      }
+    };
+
+    const showAuthMessage = (text, isError = false) => {
+      authMessage.textContent = text || '';
+      authMessage.style.color = isError ? '#fca5a5' : '#94a3b8';
+    };
+
+    const storeAuth = (token, user) => {
+      authToken = token || '';
+      authUser = user || null;
+      if (authToken && user) {
+        localStorage.setItem(TOKEN_KEY, authToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+      }
+      setAuthUI();
+    };
+
+    const callAuthEndpoint = async (url) => {
+      const body = {
+        email: (authEmail.value || '').trim().toLowerCase(),
+        password: authPassword.value || ''
+      };
+
+      if (!body.email || !body.password) {
+        showAuthMessage('Email and password required', true);
+        return;
+      }
+
+      showAuthMessage('Working...');
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await resp.json().catch(() => null);
+        if (!resp.ok) {
+          showAuthMessage((data && (data.error || data.message)) || 'Auth failed', true);
+          return;
+        }
+
+        storeAuth(data.token, { email: data.email, user_id: data.user_id });
+        showAuthMessage('Authenticated');
+      } catch (err) {
+        showAuthMessage(err?.message || 'Auth error', true);
+      }
+    };
+
+    loginBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/login'));
+    registerBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/register'));
+    logoutBtn.addEventListener('click', () => {
+      storeAuth('', null);
+      showAuthMessage('Signed out');
+    });
+
+    setAuthUI();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!senderEmailInput.value.trim()) {
+        statusEl.textContent = 'Please enter a sender email.';
+        return;
+      }
+      if (!fileInput.files.length) {
+        statusEl.textContent = 'Please choose a file to verify.';
+        return;
+      }
+      const file = fileInput.files[0];
+      const name = file.name.toLowerCase();
+      const allowed = [
+        'application/pdf', 'image/png', 'image/jpeg', 'image/bmp', 'image/tiff', 'image/webp'
+      ];
+      const okByType = allowed.includes(file.type);
+      const okByExt = ['.pdf','.png','.jpg','.jpeg','.bmp','.tiff','.webp'].some(ext => name.endsWith(ext));
+      if (!okByType && !okByExt) {
+        statusEl.textContent = 'Allowed: pdf, png, jpg, jpeg, bmp, tiff, webp.';
+        return;
+      }
+
+      statusEl.textContent = 'Uploading and verifying...';
+      submitBtn.disabled = true;
+      heroBadge.textContent = 'Running';
+
+      try {
+        const formData = new FormData();
+        formData.append('sender_email', senderEmailInput.value.trim());
+        formData.append('file', file);
+
+        const headers = {};
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+        const resp = await fetch('/api/verify', { method: 'POST', body: formData, headers });
+        const text = await resp.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (_) {
+          // leave data as null for non-JSON errors
+        }
+
+        if (!resp.ok) {
+          const details = (data && (data.message || data.error || data.details)) || text || 'Verification failed';
+          statusEl.textContent = `Error ${resp.status}: ${details}`;
+
+          if (resp.status === 400) {
+            // Show a lightweight summary without running OCR
+            const fallback = {
+              document_name: file.name,
+              timestamp: new Date().toISOString(),
+              verification_summary: {
+                final_verdict: 'ILLEGITIMATE',
+                risk_level: 'HIGH',
+                overall_confidence: 0,
+                is_verified: false,
+                all_green_flags: [],
+                all_red_flags: [details]
+              },
+              company_details: {},
+              candidate_details: {},
+              job_details: {},
+              compensation_details: {},
+              document_details: {},
+              terms_and_conditions: {},
+              sender_email_verification: data?.sender_email_verification || {
+                verdict: 'ILLEGITIMATE',
+                reason: details,
+                email: senderEmailInput.value.trim()
+              }
+            };
+            populateDashboard(fallback);
+            setBadge(heroBadge, 'ILLEGITIMATE');
+          } else {
+            setBadge(heroBadge, 'ERROR');
+            dashboard.style.display = 'none';
+          }
+          return;
+        }
+
+        statusEl.textContent = 'Done.';
+        populateDashboard(data || {});
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + (err && err.message ? err.message : err);
+        setBadge(heroBadge, 'ERROR');
+        dashboard.style.display = 'none';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
