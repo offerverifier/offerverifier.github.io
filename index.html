@@ -261,7 +261,8 @@
       <div class="pill" id="heroBadge">Ready</div>
     </div>
 
-    <div class="auth-card">
+    <!-- Login/Register Page -->
+    <div id="loginPage" class="auth-card">
       <div class="auth-header">
         <div>
           <p class="eyebrow">Authentication</p>
@@ -274,18 +275,20 @@
         <input id="authPassword" type="password" placeholder="Password (min 8 chars)" aria-label="Auth password" />
         <button id="loginBtn" type="button">Login</button>
         <button id="registerBtn" type="button">Register</button>
-        <button id="logoutBtn" type="button" class="ghost">Logout</button>
       </div>
     </div>
 
-    <form id="uploadForm">
-      <input id="senderEmail" name="sender_email" type="email" placeholder="Sender email" required aria-label="Sender email" />
-      <input id="file" name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/bmp,image/tiff,image/webp" required aria-label="Offer letter file" />
-      <button id="submitBtn" type="submit">Verify</button>
-    </form>
-    <div id="status" class="status"></div>
+    <!-- Main Homepage (hidden until authenticated) -->
+    <div id="homePage" style="display:none;">
+      <button id="logoutBtn" type="button" class="ghost" style="float:right; margin-bottom:12px;">Logout</button>
+      <form id="uploadForm">
+        <input id="senderEmail" name="sender_email" type="email" placeholder="Sender email" required aria-label="Sender email" />
+        <input id="file" name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/bmp,image/tiff,image/webp" required aria-label="Offer letter file" />
+        <button id="submitBtn" type="submit">Verify</button>
+      </form>
+      <div id="status" class="status"></div>
 
-    <div class="dashboard" id="dashboard">
+      <div class="dashboard" id="dashboard">
       <div class="section-header">
         <div>
           <p class="eyebrow">Verification summary</p>
@@ -349,20 +352,19 @@
           <ul class="list-grid" id="termsDetails"></ul>
         </div>
       </div>
+      </div>
     </div>
   </div>
 
   <script>
     // Set API base for local development
     const API_BASE = 'http://localhost:5051';
-    const form = document.getElementById('uploadForm');
-    const senderEmailInput = document.getElementById('senderEmail');
-    const fileInput = document.getElementById('file');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusEl = document.getElementById('status');
-    const dashboard = document.getElementById('dashboard');
-    const heroBadge = document.getElementById('heroBadge');
 
+    // Page containers
+    const loginPage = document.getElementById('loginPage');
+    const homePage = document.getElementById('homePage');
+
+    // Auth elements
     const authEmail = document.getElementById('authEmail');
     const authPassword = document.getElementById('authPassword');
     const loginBtn = document.getElementById('loginBtn');
@@ -370,6 +372,15 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const authState = document.getElementById('authState');
     const authMessage = document.getElementById('authMessage');
+
+    // Home/dashboard elements
+    const form = document.getElementById('uploadForm');
+    const senderEmailInput = document.getElementById('senderEmail');
+    const fileInput = document.getElementById('file');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusEl = document.getElementById('status');
+    const dashboard = document.getElementById('dashboard');
+    const heroBadge = document.getElementById('heroBadge');
 
     const TOKEN_KEY = 'offer_verifier_token';
     const USER_KEY = 'offer_verifier_user';
@@ -518,17 +529,17 @@
       dashboard.style.display = 'block';
     };
 
+
+    // Show/hide login and home pages based on auth
     const setAuthUI = () => {
       if (authToken && authUser?.email) {
         authState.textContent = `Signed in as ${authUser.email}`;
-        logoutBtn.disabled = false;
-        loginBtn.disabled = true;
-        registerBtn.disabled = true;
+        loginPage.style.display = 'none';
+        homePage.style.display = '';
       } else {
         authState.textContent = 'Signed out';
-        logoutBtn.disabled = true;
-        loginBtn.disabled = false;
-        registerBtn.disabled = false;
+        loginPage.style.display = '';
+        homePage.style.display = 'none';
       }
     };
 
@@ -581,13 +592,20 @@
       }
     };
 
+
     loginBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/login'));
     registerBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/register'));
     logoutBtn.addEventListener('click', () => {
       storeAuth('', null);
       showAuthMessage('Signed out');
+      setAuthUI();
     });
 
+
+    // Set heroBadge to green 'Ready' on page load (force green)
+    heroBadge.classList.remove('low', 'medium', 'high');
+    heroBadge.classList.add('low');
+    heroBadge.textContent = 'Ready';
     setAuthUI();
 
     form.addEventListener('submit', async (e) => {
