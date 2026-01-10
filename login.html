@@ -328,7 +328,7 @@
 
       <!-- Google Sign-In Button Container -->
       <div id="g_id_onload"
-           data-client_id="{{ google_client_id }}"
+           data-client_id="254432789690-17pdvgorjunpprd2v6985o682d053ssl.apps.googleusercontent.com"
            data-callback="handleGoogleSignIn"
            data-auto_prompt="false">
       </div>
@@ -356,7 +356,11 @@
       ? '' // Local development - same origin
       : 'https://offer-letter-verifier.onrender.com'; // Production backend
     
+    // Google OAuth Client ID - works for both Flask templates and static sites
+    const GOOGLE_CLIENT_ID = '{{ google_client_id }}' || '254432789690-17pdvgorjunpprd2v6985o682d053ssl.apps.googleusercontent.com';
+    
     console.log('API Base URL:', API_BASE);
+    console.log('Google Client ID:', GOOGLE_CLIENT_ID);
     
     // Elements
     const authForm = document.getElementById('authForm');
