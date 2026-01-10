@@ -258,35 +258,18 @@
         <h1>Offer Letter Verifier</h1>
         <p>Verify a sender email and document in one shot. Accepted: pdf, png, jpg, jpeg, bmp, tiff, webp (max 20 MB).</p>
       </div>
-      <div class="pill" id="heroBadge">Ready</div>
-    </div>
-
-    <!-- Login/Register Page -->
-    <div id="loginPage" class="auth-card">
-      <div class="auth-header">
-        <div>
-          <p class="eyebrow">Authentication</p>
-          <div id="authState" class="metric-label">Signed out</div>
-        </div>
-        <div class="inline-status" id="authMessage"></div>
-      </div>
-      <div class="auth-grid">
-        <input id="authEmail" type="email" placeholder="Email" aria-label="Auth email" />
-        <input id="authPassword" type="password" placeholder="Password (min 8 chars)" aria-label="Auth password" />
-        <button id="loginBtn" type="button">Login</button>
-        <button id="registerBtn" type="button">Register</button>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="pill" id="heroBadge">Ready</div>
+        <button id="logoutBtn" type="button" class="ghost" style="padding: 8px 16px;">Logout</button>
       </div>
     </div>
 
-    <!-- Main Homepage (hidden until authenticated) -->
-    <div id="homePage" style="display:none;">
-      <button id="logoutBtn" type="button" class="ghost" style="float:right; margin-bottom:12px;">Logout</button>
-      <form id="uploadForm">
-        <input id="senderEmail" name="sender_email" type="email" placeholder="Sender email" required aria-label="Sender email" />
-        <input id="file" name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/bmp,image/tiff,image/webp" required aria-label="Offer letter file" />
-        <button id="submitBtn" type="submit">Verify</button>
-      </form>
-      <div id="status" class="status"></div>
+    <form id="uploadForm">
+      <input id="senderEmail" name="sender_email" type="email" placeholder="Sender email" required aria-label="Sender email" />
+      <input id="file" name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/bmp,image/tiff,image/webp" required aria-label="Offer letter file" />
+      <button id="submitBtn" type="submit">Verify</button>
+    </form>
+    <div id="status" class="status"></div>
 
       <div class="dashboard" id="dashboard">
       <div class="section-header">
@@ -357,23 +340,10 @@
   </div>
 
   <script>
-    // Set API base for deployed backend
-    const API_BASE = 'https://offer-letter-verifier.onrender.com';
+    // Use relative URLs for same-origin requests (session-based auth)
+    const API_BASE = '';
 
-    // Page containers
-    const loginPage = document.getElementById('loginPage');
-    const homePage = document.getElementById('homePage');
-
-    // Auth elements
-    const authEmail = document.getElementById('authEmail');
-    const authPassword = document.getElementById('authPassword');
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const authState = document.getElementById('authState');
-    const authMessage = document.getElementById('authMessage');
-
-    // Home/dashboard elements
+    // Elements
     const form = document.getElementById('uploadForm');
     const senderEmailInput = document.getElementById('senderEmail');
     const fileInput = document.getElementById('file');
@@ -381,11 +351,7 @@
     const statusEl = document.getElementById('status');
     const dashboard = document.getElementById('dashboard');
     const heroBadge = document.getElementById('heroBadge');
-
-    const TOKEN_KEY = 'offer_verifier_token';
-    const USER_KEY = 'offer_verifier_user';
-    let authToken = localStorage.getItem(TOKEN_KEY) || '';
-    let authUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     const docTitle = document.getElementById('docTitle');
     const verdictBadge = document.getElementById('verdictBadge');
@@ -530,83 +496,40 @@
     };
 
 
-    // Show/hide login and home pages based on auth
-    const setAuthUI = () => {
-      if (authToken && authUser?.email) {
-        authState.textContent = `Signed in as ${authUser.email}`;
-        loginPage.style.display = 'none';
-        homePage.style.display = '';
-      } else {
-        authState.textContent = 'Signed out';
-        loginPage.style.display = '';
-        homePage.style.display = 'none';
-      }
-    };
-
-    const showAuthMessage = (text, isError = false) => {
-      authMessage.textContent = text || '';
-      authMessage.style.color = isError ? '#fca5a5' : '#94a3b8';
-    };
-
-    const storeAuth = (token, user) => {
-      authToken = token || '';
-      authUser = user || null;
-      if (authToken && user) {
-        localStorage.setItem(TOKEN_KEY, authToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-      }
-      setAuthUI();
-    };
-
-    const callAuthEndpoint = async (url) => {
-      const body = {
-        email: (authEmail.value || '').trim().toLowerCase(),
-        password: authPassword.value || ''
-      };
-
-      if (!body.email || !body.password) {
-        showAuthMessage('Email and password required', true);
-        return;
-      }
-
-      showAuthMessage('Working...');
+    // Logout handler
+    logoutBtn.addEventListener('click', async () => {
       try {
-        const resp = await fetch(`${API_BASE}${url}`, {
+        await fetch(`${API_BASE}/api/auth/logout`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          credentials: 'include'
         });
-        const data = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          showAuthMessage((data && (data.error || data.message)) || 'Auth failed', true);
-          return;
-        }
-
-        storeAuth(data.token, { email: data.email, user_id: data.user_id });
-        showAuthMessage('Authenticated');
+        window.location.href = '/login';
       } catch (err) {
-        showAuthMessage(err?.message || 'Auth error', true);
+        console.log('Logout error:', err);
+        window.location.href = '/login';
       }
-    };
-
-
-    loginBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/login'));
-    registerBtn.addEventListener('click', () => callAuthEndpoint('/api/auth/register'));
-    logoutBtn.addEventListener('click', () => {
-      storeAuth('', null);
-      showAuthMessage('Signed out');
-      setAuthUI();
     });
 
-
-    // Set heroBadge to green 'Ready' on page load (force green)
+    // Set heroBadge to green 'Ready' on page load
     heroBadge.classList.remove('low', 'medium', 'high');
     heroBadge.classList.add('low');
     heroBadge.textContent = 'Ready';
-    setAuthUI();
+
+    // Check authentication on page load
+    (async () => {
+      try {
+        const resp = await fetch(`${API_BASE}/api/auth/me`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (!resp.ok) {
+          // Not authenticated, redirect to login
+          window.location.href = '/login';
+        }
+      } catch (err) {
+        window.location.href = '/login';
+      }
+    })();
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -639,10 +562,11 @@
         formData.append('sender_email', senderEmailInput.value.trim());
         formData.append('file', file);
 
-        const headers = {};
-        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-        const resp = await fetch(`${API_BASE}/api/verify`, { method: 'POST', body: formData, headers });
+        const resp = await fetch(`${API_BASE}/api/verify`, { 
+          method: 'POST', 
+          body: formData,
+          credentials: 'include'
+        });
         const text = await resp.text();
         let data = null;
         try {
