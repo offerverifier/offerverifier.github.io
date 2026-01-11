@@ -507,10 +507,10 @@
           method: 'POST',
           credentials: 'include'
         });
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       } catch (err) {
         console.log('Logout error:', err);
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       }
     });
 
@@ -522,16 +522,37 @@
     // Check authentication on page load
     (async () => {
       try {
+        console.log('Checking authentication...');
         const resp = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'GET',
           credentials: 'include'
         });
+        
+        console.log('Auth response status:', resp.status);
+        
         if (!resp.ok) {
-          // Not authenticated, redirect to login
-          window.location.href = '/login';
+          console.log('Authentication check failed (status not ok), redirecting to login');
+          window.location.href = '/login.html';
+          return;
+        }
+        
+        const data = await resp.json();
+        console.log('Auth response data:', data);
+        
+        // More flexible check - accept if response is ok and has some user data
+        // Backend might return different structures: {success, user} or just {user} or {email}
+        const hasUser = data && (data.user || data.email || (data.success && data.user));
+        
+        if (!hasUser) {
+          console.log('No valid user session found, redirecting to login');
+          console.log('Response data:', JSON.stringify(data));
+          window.location.href = '/login.html';
+        } else {
+          console.log('Authentication successful, user:', data.user || data.email || data);
         }
       } catch (err) {
-        window.location.href = '/login';
+        console.error('Auth check error:', err);
+        window.location.href = '/login.html';
       }
     })();
 

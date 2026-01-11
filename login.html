@@ -457,7 +457,7 @@
         
         // Redirect to home page after short delay
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/index.html';
         }, 1000);
 
       } catch (error) {
@@ -496,7 +496,7 @@
         
         // Redirect to home page after short delay
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/index.html';
         }, 1000);
 
       } catch (error) {
@@ -516,11 +516,13 @@
           const data = await response.json();
           if (data.success && data.user) {
             // Already logged in, redirect to home
-            window.location.href = '/';
+            console.log('Already authenticated, redirecting to index');
+            window.location.href = '/index.html';
           }
         }
       } catch (error) {
         // Not authenticated, stay on login page
+        console.log('Not authenticated, staying on login page');
       }
     })();
   </script>
