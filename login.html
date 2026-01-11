@@ -362,6 +362,21 @@
     console.log('API Base URL:', API_BASE);
     console.log('Google Client ID:', GOOGLE_CLIENT_ID);
     
+    // Auth token management
+    const AUTH_TOKEN_KEY = 'auth_token';
+    
+    function getAuthToken() {
+      return localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+    
+    function setAuthToken(token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+    
+    function clearAuthToken() {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+    
     // Elements
     const authForm = document.getElementById('authForm');
     const emailInput = document.getElementById('email');
@@ -441,7 +456,6 @@
         const response = await fetch(`${API_BASE}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
 
@@ -450,6 +464,15 @@
         if (!response.ok) {
           showAlert(data.error || 'Authentication failed', true);
           return;
+        }
+
+        // Store the token from backend response
+        if (data.token) {
+          setAuthToken(data.token);
+          console.log('Token saved to localStorage');
+        } else {
+          console.warn('No token in response, using email as fallback');
+          setAuthToken(email); // Fallback if backend doesn't return token
         }
 
         // Success
@@ -480,7 +503,6 @@
         const res = await fetch(`${API_BASE}/api/auth/google`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ credential })
         });
 
@@ -489,6 +511,14 @@
         if (!res.ok) {
           showAlert(data.error || 'Google Sign-In failed', true);
           return;
+        }
+
+        // Store the token from backend response
+        if (data.token) {
+          setAuthToken(data.token);
+          console.log('Token saved to localStorage');
+        } else {
+          console.warn('No token in Google response');
         }
 
         // Success
@@ -508,8 +538,17 @@
     // Check if already authenticated
     (async () => {
       try {
+        const token = getAuthToken();
+        if (!token) {
+          console.log('No token found, staying on login page');
+          return;
+        }
+        
         const response = await fetch(`${API_BASE}/api/auth/me`, {
-          credentials: 'include'
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
         
         if (response.ok) {
@@ -519,6 +558,10 @@
             console.log('Already authenticated, redirecting to index');
             window.location.href = '/index.html';
           }
+        } else {
+          // Token invalid, clear it
+          console.log('Token invalid, clearing');
+          clearAuthToken();
         }
       } catch (error) {
         // Not authenticated, stay on login page

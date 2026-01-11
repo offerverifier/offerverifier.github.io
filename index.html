@@ -347,6 +347,21 @@
     
     console.log('API Base URL:', API_BASE);
 
+    // Auth token management
+    const AUTH_TOKEN_KEY = 'auth_token';
+    
+    function getAuthToken() {
+      return localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+    
+    function setAuthToken(token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+    
+    function clearAuthToken() {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+
     // Elements
     const form = document.getElementById('uploadForm');
     const senderEmailInput = document.getElementById('senderEmail');
@@ -503,13 +518,21 @@
     // Logout handler
     logoutBtn.addEventListener('click', async () => {
       try {
-        await fetch(`${API_BASE}/api/auth/logout`, {
-          method: 'POST',
-          credentials: 'include'
-        });
+        const token = getAuthToken();
+        if (token) {
+          await fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+        clearAuthToken();
         window.location.href = '/login.html';
       } catch (err) {
         console.log('Logout error:', err);
+        clearAuthToken();
         window.location.href = '/login.html';
       }
     });
@@ -523,15 +546,27 @@
     (async () => {
       try {
         console.log('Checking authentication...');
+        const token = getAuthToken();
+        
+        if (!token) {
+          console.log('No auth token found, redirecting to login');
+          window.location.href = '/login.html';
+          return;
+        }
+        
         const resp = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'GET',
-          credentials: 'include'
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
         
         console.log('Auth response status:', resp.status);
         
         if (!resp.ok) {
           console.log('Authentication check failed (status not ok), redirecting to login');
+          clearAuthToken();
           window.location.href = '/login.html';
           return;
         }
@@ -540,18 +575,19 @@
         console.log('Auth response data:', data);
         
         // More flexible check - accept if response is ok and has some user data
-        // Backend might return different structures: {success, user} or just {user} or {email}
         const hasUser = data && (data.user || data.email || (data.success && data.user));
         
         if (!hasUser) {
           console.log('No valid user session found, redirecting to login');
           console.log('Response data:', JSON.stringify(data));
+          clearAuthToken();
           window.location.href = '/login.html';
         } else {
           console.log('Authentication successful, user:', data.user || data.email || data);
         }
       } catch (err) {
         console.error('Auth check error:', err);
+        clearAuthToken();
         window.location.href = '/login.html';
       }
     })();
@@ -587,10 +623,16 @@
         formData.append('sender_email', senderEmailInput.value.trim());
         formData.append('file', file);
 
+        const token = getAuthToken();
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const resp = await fetch(`${API_BASE}/api/verify`, { 
           method: 'POST', 
           body: formData,
-          credentials: 'include'
+          headers: headers
         });
         const text = await resp.text();
         let data = null;
