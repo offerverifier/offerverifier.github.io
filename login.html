@@ -452,17 +452,8 @@
           return;
         }
 
-        // Success - store session data locally
+        // Success - session is now stored in cookies
         console.log('Authentication successful, session created');
-        const sessionData = {
-          email: email,
-          authenticated: true,
-          loginTime: Date.now(),
-          provider: 'email'
-        };
-        localStorage.setItem('user_session', JSON.stringify(sessionData));
-        console.log('Session data stored:', sessionData);
-        
         showAlert(isSignUpMode ? 'Account created successfully!' : 'Signed in successfully!', false);
         
         // Redirect to home page
@@ -502,18 +493,8 @@
           return;
         }
 
-        // Success - store session data locally
+        // Success - session is now stored in cookies
         console.log('Google authentication successful, session created');
-        const sessionData = {
-          email: data.email || 'google_user',
-          name: data.name || '',
-          authenticated: true,
-          loginTime: Date.now(),
-          provider: 'google'
-        };
-        localStorage.setItem('user_session', JSON.stringify(sessionData));
-        console.log('Session data stored:', sessionData);
-        
         showAlert('Signed in with Google successfully!', false);
         
         // Redirect to home page
@@ -531,33 +512,9 @@
     // Check if already authenticated
     (async () => {
       try {
-        // Check local session first
-        const sessionStr = localStorage.getItem('user_session');
-        if (sessionStr) {
-          try {
-            const session = JSON.parse(sessionStr);
-            const sessionAge = Date.now() - (session.loginTime || 0);
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-            
-            if (session.authenticated && sessionAge < maxAge) {
-              console.log('Valid session found in localStorage:', session);
-              console.log('Already authenticated, redirecting to index');
-              window.location.href = '/index.html';
-              return;
-            } else {
-              console.log('Session expired, clearing localStorage');
-              localStorage.removeItem('user_session');
-            }
-          } catch (e) {
-            console.log('Invalid session data, clearing');
-            localStorage.removeItem('user_session');
-          }
-        }
-        
-        // Fallback: check backend session
         const response = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'GET',
-          credentials: 'include',
+          credentials: 'include', // Include cookies for session-based auth
           headers: {
             'Content-Type': 'application/json'
           }
@@ -566,22 +523,16 @@
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.user) {
-            // Backend has valid session, store it locally
-            const sessionData = {
-              email: data.user.email || data.email,
-              authenticated: true,
-              loginTime: Date.now(),
-              provider: 'backend'
-            };
-            localStorage.setItem('user_session', JSON.stringify(sessionData));
-            console.log('Backend session found, redirecting to index');
+            // Already logged in, redirect to home
+            console.log('Already authenticated, redirecting to index');
             window.location.href = '/index.html';
           }
         } else {
           console.log('Not authenticated, staying on login page');
         }
       } catch (error) {
-        console.log('Auth check error, staying on login page:', error);
+        // Not authenticated, stay on login page
+        console.log('Not authenticated, staying on login page');
       }
     })();
   </script>

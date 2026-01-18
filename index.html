@@ -347,40 +347,6 @@
     
     console.log('API Base URL:', API_BASE);
 
-    // Session Management Functions
-    function getUserSession() {
-      try {
-        const sessionStr = localStorage.getItem('user_session');
-        if (!sessionStr) return null;
-        
-        const session = JSON.parse(sessionStr);
-        const sessionAge = Date.now() - (session.loginTime || 0);
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
-        if (session.authenticated && sessionAge < maxAge) {
-          return session;
-        } else {
-          localStorage.removeItem('user_session');
-          return null;
-        }
-      } catch (e) {
-        localStorage.removeItem('user_session');
-        return null;
-      }
-    }
-    
-    function clearUserSession() {
-      localStorage.removeItem('user_session');
-    }
-    
-    function updateUserSession(updates) {
-      const session = getUserSession();
-      if (session) {
-        const updated = { ...session, ...updates };
-        localStorage.setItem('user_session', JSON.stringify(updated));
-      }
-    }
-
     // Elements
     const form = document.getElementById('uploadForm');
     const senderEmailInput = document.getElementById('senderEmail');
@@ -539,17 +505,14 @@
       try {
         await fetch(`${API_BASE}/api/auth/logout`, {
           method: 'POST',
-          credentials: 'include',
+          credentials: 'include', // Include cookies for session-based auth
           headers: {
             'Content-Type': 'application/json'
           }
         });
-        clearUserSession();
-        console.log('Session cleared, redirecting to login');
         window.location.href = '/login.html';
       } catch (err) {
         console.log('Logout error:', err);
-        clearUserSession();
         window.location.href = '/login.html';
       }
     });
@@ -564,91 +527,40 @@
       try {
         console.log('Checking authentication...');
         
-        // Check local session first (fast, no network call)
-        const localSession = getUserSession();
-        
-        if (localSession) {
-          console.log('✅ Valid session found in localStorage:', localSession);
-          console.log(`Session for: ${localSession.email} (${localSession.provider})`);
-          console.log('User authenticated, staying on business page');
-          
-          // Optionally validate with backend in background (non-blocking)
-          setTimeout(async () => {
-            try {
-              const resp = await fetch(`${API_BASE}/api/auth/me`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' }
-              });
-              
-              if (!resp.ok) {
-                console.log('⚠️ Backend session invalid, but keeping local session');
-              } else {
-                const data = await resp.json();
-                if (data.success || data.user) {
-                  console.log('✅ Backend session also valid');
-                  // Update local session with any new data
-                  if (data.email || (data.user && data.user.email)) {
-                    updateUserSession({ email: data.email || data.user.email });
-                  }
-                }
-              }
-            } catch (err) {
-              console.log('Background validation failed (network error), keeping local session');
-            }
-          }, 1000);
-          
-          return; // Stay on page
-        }
-        
-        // No local session, check backend
-        console.log('No local session found, checking backend...');
-        
         const resp = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
+          credentials: 'include', // Include cookies for session-based auth
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         
         console.log('Auth response status:', resp.status);
         
-        if (resp.ok) {
-          const data = await resp.json();
-          console.log('Auth response data:', JSON.stringify(data));
-          
-          const hasValidAuth = data && (data.success === true || data.user || data.email);
-          
-          if (hasValidAuth) {
-            console.log('✅ Backend authentication successful!');
-            // Store session locally for future page loads
-            const sessionData = {
-              email: data.email || (data.user && data.user.email) || 'authenticated_user',
-              authenticated: true,
-              loginTime: Date.now(),
-              provider: 'backend'
-            };
-            localStorage.setItem('user_session', JSON.stringify(sessionData));
-            console.log('Session data stored:', sessionData);
-            return; // Stay on page
-          }
+        if (!resp.ok) {
+          console.log('Authentication check failed (status not ok), redirecting to login');
+          console.log('Response status:', resp.status, resp.statusText);
+          window.location.href = '/login.html';
+          return;
         }
         
-        // No valid session found anywhere
-        console.log('❌ No valid session found, redirecting to login');
-        clearUserSession();
-        window.location.href = '/login.html';
+        const data = await resp.json();
+        console.log('Auth response data:', JSON.stringify(data));
         
+        // Check if response has success=true OR has user data
+        const hasValidAuth = data && (data.success === true || data.user || data.email);
+        
+        if (!hasValidAuth) {
+          console.log('No valid user session found, redirecting to login');
+          console.log('Response data:', JSON.stringify(data));
+          window.location.href = '/login.html';
+        } else {
+          console.log('✅ Authentication successful!', data.user || data.email || 'Authenticated');
+        }
       } catch (err) {
         console.error('Auth check error:', err);
-        
-        // Check if we have a local session as fallback
-        const localSession = getUserSession();
-        if (localSession) {
-          console.log('⚠️ Network error but valid local session exists - staying on page');
-        } else {
-          console.log('❌ Network error and no local session - redirecting to login');
-          window.location.href = '/login.html';
-        }
+        console.log('Network error during auth check, redirecting to login');
+        window.location.href = '/login.html';
       }
     })();
 
