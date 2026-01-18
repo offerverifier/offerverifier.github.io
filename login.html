@@ -454,6 +454,8 @@
 
         // Success - session is now stored in cookies
         console.log('Authentication successful, session created');
+        sessionStorage.setItem('authenticated', 'true');
+        sessionStorage.setItem('auth_time', Date.now().toString());
         showAlert(isSignUpMode ? 'Account created successfully!' : 'Signed in successfully!', false);
         
         // Redirect to home page
@@ -495,6 +497,8 @@
 
         // Success - session is now stored in cookies
         console.log('Google authentication successful, session created');
+        sessionStorage.setItem('authenticated', 'true');
+        sessionStorage.setItem('auth_time', Date.now().toString());
         showAlert('Signed in with Google successfully!', false);
         
         // Redirect to home page

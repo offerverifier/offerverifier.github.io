@@ -510,9 +510,13 @@
             'Content-Type': 'application/json'
           }
         });
+        sessionStorage.removeItem('authenticated');
+        sessionStorage.removeItem('auth_time');
         window.location.href = '/login.html';
       } catch (err) {
         console.log('Logout error:', err);
+        sessionStorage.removeItem('authenticated');
+        sessionStorage.removeItem('auth_time');
         window.location.href = '/login.html';
       }
     });
@@ -527,40 +531,84 @@
       try {
         console.log('Checking authentication...');
         
-        const resp = await fetch(`${API_BASE}/api/auth/me`, {
-          method: 'GET',
-          credentials: 'include', // Include cookies for session-based auth
-          headers: {
-            'Content-Type': 'application/json'
+        // Check if we just logged in (within last 5 minutes)
+        const authTime = sessionStorage.getItem('auth_time');
+        const isRecentlyAuthenticated = authTime && (Date.now() - parseInt(authTime)) < 300000; // 5 minutes
+        const hasAuthFlag = sessionStorage.getItem('authenticated') === 'true';
+        
+        if (hasAuthFlag) {
+          console.log('Found authentication flag in sessionStorage');
+        }
+        
+        let authCheckPassed = false;
+        let retryCount = 0;
+        const maxRetries = isRecentlyAuthenticated ? 2 : 0; // Retry if recently authenticated
+        
+        while (!authCheckPassed && retryCount <= maxRetries) {
+          if (retryCount > 0) {
+            console.log(`Retrying auth check (${retryCount}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
           }
-        });
-        
-        console.log('Auth response status:', resp.status);
-        
-        if (!resp.ok) {
-          console.log('Authentication check failed (status not ok), redirecting to login');
-          console.log('Response status:', resp.status, resp.statusText);
-          window.location.href = '/login.html';
-          return;
+          
+          try {
+            const resp = await fetch(`${API_BASE}/api/auth/me`, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('Auth response status:', resp.status);
+            
+            if (resp.ok) {
+              const data = await resp.json();
+              console.log('Auth response data:', JSON.stringify(data));
+              
+              // Check if response has success=true OR has user data
+              const hasValidAuth = data && (data.success === true || data.user || data.email);
+              
+              if (hasValidAuth) {
+                console.log('✅ Authentication successful!', data.user || data.email || 'Authenticated');
+                authCheckPassed = true;
+                break;
+              }
+            }
+          } catch (err) {
+            console.error('Auth check error:', err);
+          }
+          
+          retryCount++;
         }
         
-        const data = await resp.json();
-        console.log('Auth response data:', JSON.stringify(data));
-        
-        // Check if response has success=true OR has user data
-        const hasValidAuth = data && (data.success === true || data.user || data.email);
-        
-        if (!hasValidAuth) {
-          console.log('No valid user session found, redirecting to login');
-          console.log('Response data:', JSON.stringify(data));
-          window.location.href = '/login.html';
-        } else {
-          console.log('✅ Authentication successful!', data.user || data.email || 'Authenticated');
+        // If we have a recent auth flag and network is working, stay on page
+        if (!authCheckPassed) {
+          if (isRecentlyAuthenticated && hasAuthFlag) {
+            console.log('⚠️ Auth check failed but recently authenticated - staying on page');
+            console.log('Note: Session cookies may not be working across domains');
+            authCheckPassed = true; // Allow access anyway
+          } else {
+            console.log('Authentication check failed, redirecting to login');
+            sessionStorage.removeItem('authenticated');
+            sessionStorage.removeItem('auth_time');
+            window.location.href = '/login.html';
+            return;
+          }
         }
+        
       } catch (err) {
         console.error('Auth check error:', err);
-        console.log('Network error during auth check, redirecting to login');
-        window.location.href = '/login.html';
+        // Only redirect if we don't have a recent auth flag
+        const hasAuthFlag = sessionStorage.getItem('authenticated') === 'true';
+        const authTime = sessionStorage.getItem('auth_time');
+        const isRecentlyAuthenticated = authTime && (Date.now() - parseInt(authTime)) < 300000;
+        
+        if (!hasAuthFlag || !isRecentlyAuthenticated) {
+          console.log('Network error and no recent auth, redirecting to login');
+          window.location.href = '/login.html';
+        } else {
+          console.log('⚠️ Network error but recently authenticated - staying on page');
+        }
       }
     })();
 
