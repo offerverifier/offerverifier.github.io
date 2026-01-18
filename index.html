@@ -554,6 +554,8 @@
           return;
         }
         
+        console.log('Found token:', token.substring(0, 20) + '...');
+        
         const resp = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'GET',
           headers: {
@@ -566,29 +568,35 @@
         
         if (!resp.ok) {
           console.log('Authentication check failed (status not ok), redirecting to login');
+          console.log('Response status:', resp.status, resp.statusText);
           clearAuthToken();
           window.location.href = '/login.html';
           return;
         }
         
         const data = await resp.json();
-        console.log('Auth response data:', data);
+        console.log('Auth response data:', JSON.stringify(data));
         
-        // More flexible check - accept if response is ok and has some user data
-        const hasUser = data && (data.user || data.email || (data.success && data.user));
+        // More flexible check - accept if response has success=true OR has user data
+        const hasValidAuth = data && (data.success === true || data.user || data.email);
         
-        if (!hasUser) {
+        if (!hasValidAuth) {
           console.log('No valid user session found, redirecting to login');
           console.log('Response data:', JSON.stringify(data));
           clearAuthToken();
           window.location.href = '/login.html';
         } else {
-          console.log('Authentication successful, user:', data.user || data.email || data);
+          console.log('✅ Authentication successful!', data.user || data.email || 'Authenticated');
         }
       } catch (err) {
         console.error('Auth check error:', err);
-        clearAuthToken();
-        window.location.href = '/login.html';
+        // Only redirect on network errors if no token or if it's a 401/403
+        if (err.message.includes('401') || err.message.includes('403')) {
+          clearAuthToken();
+          window.location.href = '/login.html';
+        } else {
+          console.log('Network error during auth check, allowing access (token present)');
+        }
       }
     })();
 

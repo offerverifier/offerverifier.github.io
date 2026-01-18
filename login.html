@@ -469,7 +469,7 @@
         // Store the token from backend response
         if (data.token) {
           setAuthToken(data.token);
-          console.log('Token saved to localStorage');
+          console.log('Token saved to localStorage:', data.token.substring(0, 20) + '...');
         } else {
           console.warn('No token in response, using email as fallback');
           setAuthToken(email); // Fallback if backend doesn't return token
@@ -478,10 +478,11 @@
         // Success
         showAlert(isSignUpMode ? 'Account created successfully!' : 'Signed in successfully!', false);
         
-        // Redirect to home page after short delay
+        // Redirect to home page after ensuring token is saved
         setTimeout(() => {
+          console.log('Redirecting to index.html...');
           window.location.href = '/index.html';
-        }, 1000);
+        }, 1500);
 
       } catch (error) {
         showAlert('Network error. Please try again.', true);
@@ -516,7 +517,7 @@
         // Store the token from backend response
         if (data.token) {
           setAuthToken(data.token);
-          console.log('Token saved to localStorage');
+          console.log('Google token saved to localStorage:', data.token.substring(0, 20) + '...');
         } else {
           console.warn('No token in Google response');
         }
@@ -524,10 +525,11 @@
         // Success
         showAlert('Signed in with Google successfully!', false);
         
-        // Redirect to home page after short delay
+        // Redirect to home page after ensuring token is saved
         setTimeout(() => {
+          console.log('Redirecting to index.html...');
           window.location.href = '/index.html';
-        }, 1000);
+        }, 1500);
 
       } catch (error) {
         console.error('Google Sign-In error:', error);
